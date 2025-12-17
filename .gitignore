@@ -48,3 +48,7 @@ DATABASE_SCHEMA.md
 FRONTEND_API_DOCUMENTATION.md
 NKUST_OEPP_Backend.postman_collection.json
 POSTMAN_TEST_GUIDE.md
+
+### Upload Files ###
+upload/
+!upload/.gitkeep

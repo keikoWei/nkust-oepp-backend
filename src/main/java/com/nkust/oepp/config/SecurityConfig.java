@@ -44,7 +44,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/carousel/public/**", "/actuator/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/carousel/public/**", "/api/news/public/**", "/api/news/file/**", "/actuator/**", "/error").permitAll()
                 // 超級管理員可以訪問所有路徑
                 .requestMatchers("/api/**").hasAnyRole(
                     Role.SUPER_ADMIN.getCode(),

@@ -19,3 +19,5 @@ public interface PublicationRepository extends JpaRepository<Publication, Long> 
     List<Publication> findByCenterRole(@Param("centerRole") Role centerRole);
 }
 
+
+

@@ -2,6 +2,7 @@ package com.nkust.oepp.config;
 
 import com.nkust.oepp.entity.Role;
 import com.nkust.oepp.filter.JwtAuthenticationFilter;
+import com.nkust.oepp.filter.MaintenanceModeFilter;
 import com.nkust.oepp.filter.RoleAuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,9 @@ public class SecurityConfig {
     private RoleAuthorizationFilter roleAuthorizationFilter;
 
     @Autowired
+    private MaintenanceModeFilter maintenanceModeFilter;
+
+    @Autowired
     private UserDetailsService userDetailsService;
 
     @Bean
@@ -44,7 +48,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/carousel/public/**", "/api/news/public/**", "/api/news/file/**", "/api/courses/public/**", "/api/courses/file/**", "/api/training-plans/public/**", "/api/publications/public/**", "/actuator/**", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/api/carousel/public/**", "/api/news/public/**", "/api/news/file/**", "/api/courses/public/**", "/api/courses/file/**", "/api/training-plans/public/**", "/api/publications/public/**", "/api/system-config/maintenance-mode", "/actuator/**", "/error").permitAll()
                 // 超級管理員可以訪問所有路徑
                 .requestMatchers("/api/**").hasAnyRole(
                     Role.SUPER_ADMIN.getCode(),
@@ -60,6 +64,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authenticationProvider(authenticationProvider())
+            .addFilterBefore(maintenanceModeFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(roleAuthorizationFilter, JwtAuthenticationFilter.class);
         

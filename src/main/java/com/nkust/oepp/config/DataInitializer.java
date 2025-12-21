@@ -1,7 +1,9 @@
 package com.nkust.oepp.config;
 
 import com.nkust.oepp.entity.Role;
+import com.nkust.oepp.entity.SystemConfig;
 import com.nkust.oepp.entity.User;
+import com.nkust.oepp.repository.SystemConfigRepository;
 import com.nkust.oepp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -15,6 +17,9 @@ public class DataInitializer implements CommandLineRunner {
     private UserRepository userRepository;
 
     @Autowired
+    private SystemConfigRepository systemConfigRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
@@ -26,6 +31,9 @@ public class DataInitializer implements CommandLineRunner {
         createUserIfNotExists("product", "product", Role.PRODUCT_CENTER);
         createUserIfNotExists("exhibition", "exhibition", Role.EXHIBITION_CENTER);
         createUserIfNotExists("management", "management", Role.MANAGEMENT_CENTER);
+        
+        // 初始化系統設定
+        createSystemConfigIfNotExists("MAINTENANCE_MODE", "false");
         
         System.out.println("========================================");
         System.out.println("測試帳號已建立（帳號/密碼相同）:");
@@ -50,6 +58,16 @@ public class DataInitializer implements CommandLineRunner {
                     .credentialsNonExpired(true)
                     .build();
             userRepository.save(user);
+        }
+    }
+
+    private void createSystemConfigIfNotExists(String configKey, String configValue) {
+        if (!systemConfigRepository.existsByConfigKey(configKey)) {
+            SystemConfig config = SystemConfig.builder()
+                    .configKey(configKey)
+                    .configValue(configValue)
+                    .build();
+            systemConfigRepository.save(config);
         }
     }
 }

@@ -52,3 +52,9 @@ POSTMAN_TEST_GUIDE.md
 ### Upload Files ###
 upload/
 !upload/.gitkeep
+
+### Nginx ###
+nginx.conf
+
+### application.properties ###
+application-prod.properties

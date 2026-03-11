@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -79,6 +81,84 @@ public class NewsController {
     }
     
     /**
+     * 下載檔案（建議使用：path 用 query 傳，避免路徑含 / 造成 404）
+     * 例：GET /api/news/file?path=news%2Fabc.pdf
+     */
+    @GetMapping(value = "/file", params = "path")
+    public ResponseEntity<Resource> downloadFileByQuery(@RequestParam String path) {
+        return doDownloadFile(path);
+    }
+
+    /**
+     * 下載檔案（路徑在 URL 中，例：/api/news/file/news/abc.pdf）
+     */
+    @GetMapping("/file/{filePath:.+}")
+    public ResponseEntity<Resource> downloadFileByPath(@PathVariable String filePath) {
+        return doDownloadFile(filePath);
+    }
+
+    private ResponseEntity<Resource> doDownloadFile(String filePath) {
+        try {
+            Path file = Paths.get("upload", filePath);
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = determineContentType(filePath);
+                String disposition = buildContentDisposition(resource.getFilename(), filePath);
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                        .body(resource);
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 組 Content-Disposition，避免檔名含中文等非 ASCII 時 Tomcat 報錯（僅支援 0-255）。
+     * 使用 ASCII fallback + RFC 5987 filename*=UTF-8'' 編碼。
+     */
+    private String buildContentDisposition(String filename, String filePath) {
+        String ext = filePath.contains(".") ? filePath.substring(filePath.lastIndexOf('.')) : "";
+        String safeAscii = isAscii(filename) ? filename.replace("\"", "%22") : "download" + ext;
+        String disposition = "attachment; filename=\"" + safeAscii + "\"";
+        if (!isAscii(filename)) {
+            try {
+                String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+                disposition += "; filename*=UTF-8''" + encoded;
+            } catch (Exception ignored) { }
+        }
+        return disposition;
+    }
+
+    private boolean isAscii(String s) {
+        if (s == null) return true;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) > 127) return false;
+        }
+        return true;
+    }
+
+    private String determineContentType(String filePath) {
+        String extension = filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
+        switch (extension) {
+            case "pdf":
+                return "application/pdf";
+            case "doc":
+                return "application/msword";
+            case "docx":
+                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            case "xls":
+                return "application/vnd.ms-excel";
+            case "xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            default:
+                return "application/octet-stream";
+        }
+    }
+
+    /**
      * 根據 ID 獲取消息
      */
     @GetMapping("/{id}")
@@ -114,50 +194,6 @@ public class NewsController {
             return ResponseEntity.ok(responses);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("無效的中心角色: " + centerRole, e);
-        }
-    }
-    
-    /**
-     * 下載檔案
-     */
-    @GetMapping("/file/{filePath:.+}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String filePath) {
-        try {
-            Path file = Paths.get("upload", filePath);
-            Resource resource = new UrlResource(file.toUri());
-            
-            if (resource.exists() && resource.isReadable()) {
-                String contentType = determineContentType(filePath);
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                        .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-    
-    /**
-     * 根據檔案路徑判斷 Content-Type
-     */
-    private String determineContentType(String filePath) {
-        String extension = filePath.substring(filePath.lastIndexOf('.') + 1).toLowerCase();
-        switch (extension) {
-            case "pdf":
-                return "application/pdf";
-            case "doc":
-                return "application/msword";
-            case "docx":
-                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            case "xls":
-                return "application/vnd.ms-excel";
-            case "xlsx":
-                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            default:
-                return "application/octet-stream";
         }
     }
 }

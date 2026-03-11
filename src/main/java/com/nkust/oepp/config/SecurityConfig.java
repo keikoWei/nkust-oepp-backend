@@ -51,6 +51,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 允許 OPTIONS 預檢請求（必須放在最前面）
                 .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/news/*").permitAll()
                 .requestMatchers("/api/auth/**", "/api/carousel/public/**", "/api/news/public/**", "/api/news/file/**", "/api/courses/public/**", "/api/courses/file/**", "/api/training-plans/public/**", "/api/publications/public/**", "/api/system-config/maintenance-mode", "/actuator/**", "/error").permitAll()
                 // 超級管理員可以訪問所有路徑
                 .requestMatchers("/api/**").hasAnyRole(
